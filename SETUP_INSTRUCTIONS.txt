@@ -1,0 +1,124 @@
+================================================================================
+       RISK ASSESSMENT TOOL - BACKEND SETUP WITH MYSQL (XAMPP)
+================================================================================
+
+QUICK SETUP STEPS:
+
+1. INSTALL XAMPP
+   - Download from: https://www.apachefriends.org/
+   - Install to C:\xampp
+   - Open XAMPP Control Panel
+   - Start MySQL (click Start button)
+
+2. CREATE DATABASE
+   - Open browser: http://localhost/phpmyadmin
+   - Click "SQL" tab
+   - Open file: backend/database/schema.sql
+   - Copy ALL contents and paste
+   - Click "Go" button
+   - Database "risk_assessment_db" will be created
+
+3. INSTALL BACKEND DEPENDENCIES
+   Open Command Prompt:
+
+   cd "c:\Users\hanep\Documents\kerja\web-based Risk Assessment Tool Dashboard System\backend"
+   npm install
+
+4. INSTALL FRONTEND DEPENDENCIES (add axios)
+   Open another Command Prompt:
+
+   cd "c:\Users\hanep\Documents\kerja\web-based Risk Assessment Tool Dashboard System"
+   npm install
+
+5. START BACKEND SERVER
+   In backend terminal:
+
+   npm start
+
+   Should show: "Risk Assessment API Server Running" on port 5000
+
+6. START FRONTEND
+   In frontend terminal:
+
+   npm run dev
+
+   Should start on port 5173
+
+7. TEST THE APPLICATION
+   - Open browser: http://localhost:5173
+   - Try registering a new account
+   - Try logging in with:
+     Email: admin@riskassessment.com
+     Password: admin123
+
+================================================================================
+
+DEFAULT ACCOUNTS:
+
+Admin Account:
+  Email: admin@riskassessment.com
+  Password: admin123
+  Role: admin
+
+Test User Account:
+  Email: john@example.com
+  Password: admin123
+  Role: user
+
+================================================================================
+
+IMPORTANT URLS:
+
+Frontend:     http://localhost:5173
+Backend API:  http://localhost:5000
+API Health:   http://localhost:5000/api/health
+phpMyAdmin:   http://localhost/phpmyadmin
+
+================================================================================
+
+TROUBLESHOOTING:
+
+Problem: "MySQL Connection Error"
+Solution:
+  - Make sure XAMPP MySQL is running (green in control panel)
+  - Check database exists in phpMyAdmin
+  - Verify .env file in backend folder
+
+Problem: "Port 5000 already in use"
+Solution:
+  - Edit backend/.env file
+  - Change PORT=5000 to PORT=5001
+  - Restart backend server
+
+Problem: Frontend can't connect to backend
+Solution:
+  - Make sure both servers are running
+  - Check browser console for errors
+  - Verify backend/.env has FRONTEND_URL=http://localhost:5173
+
+Problem: Login/Register not working
+Solution:
+  - Check backend terminal for errors
+  - Verify database tables exist
+  - Check browser Network tab for API calls
+
+================================================================================
+
+FEATURES NOW AVAILABLE:
+
+✓ Real user registration and login
+✓ Role-based access (Admin / User)
+✓ Data saved in MySQL database
+✓ JWT token authentication
+✓ Secure password hashing
+✓ Multi-user support
+✓ Data persists across sessions
+
+================================================================================
+
+TO STOP SERVERS:
+
+- Press Ctrl+C in each terminal window
+- Stop MySQL in XAMPP Control Panel
+
+================================================================================

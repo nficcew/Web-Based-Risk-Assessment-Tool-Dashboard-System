@@ -1,0 +1,300 @@
+.threat-management {
+  animation: fadeIn 0.3s ease;
+}
+
+/* Stat Cards */
+.stat-card-mini {
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--gray-200);
+  text-align: center;
+}
+
+.stat-card-mini h4 {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.stat-number.critical { color: var(--risk-critical); }
+.stat-number.high { color: var(--risk-high); }
+
+.threat-cell {
+  max-width: 250px;
+}
+
+.threat-cell strong {
+  display: block;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.threat-description {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.vulnerability-cell {
+  max-width: 200px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* Risk Guide */
+.risk-guide {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-xl);
+  padding: var(--spacing-md);
+}
+
+.guide-section h4 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.guide-section ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.guide-section li {
+  padding: var(--spacing-sm) 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.guide-section li:last-child {
+  border-bottom: none;
+}
+
+.guide-section li strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Risk Preview in Modal */
+.risk-preview {
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background-color: var(--gray-50);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+}
+
+.risk-preview strong {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.risk-preview .badge {
+  font-size: 14px;
+  padding: 6px 16px;
+}
+
+/* Threat Modal */
+.threat-modal {
+  max-width: 700px;
+}
+
+/* Risk Matrix Table */
+.risk-matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 600px;
+}
+
+.risk-matrix-table th,
+.risk-matrix-table td {
+  border: 1px solid var(--gray-300);
+  padding: 8px 12px;
+  text-align: center;
+}
+
+.matrix-header-label {
+  background: var(--primary-dark);
+  color: var(--text-light);
+  font-weight: 600;
+  text-align: left !important;
+  white-space: nowrap;
+}
+
+.matrix-col-header {
+  background: var(--gray-700, #444);
+  color: var(--text-light);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.matrix-row-label {
+  background: var(--gray-100);
+  font-weight: 600;
+  text-align: left !important;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.matrix-cell {
+  font-weight: 600;
+  color: #fff;
+}
+
+.matrix-low      { background-color: #27ae60; }
+.matrix-medium   { background-color: #f39c12; color: #000 !important; }
+.matrix-high     { background-color: #e74c3c; }
+.matrix-critical { background-color: #8e1010; }
+
+.matrix-legend {
+  display: flex;
+  gap: 16px;
+  padding: 12px 16px;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.legend-item.matrix-medium { color: #000; }
+
+/* Guide Tables */
+.guide-toggle-section {
+  border-top: 1px solid var(--gray-200);
+  padding: 8px 0;
+}
+
+.guide-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-blue);
+  padding: 10px 16px;
+  width: 100%;
+  text-align: left;
+  transition: background 0.2s;
+}
+
+.guide-toggle-btn:hover {
+  background: var(--gray-50);
+}
+
+.guide-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 500px;
+  margin-top: 8px;
+}
+
+.guide-table th {
+  background: var(--primary-dark);
+  color: var(--text-light);
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 600;
+}
+
+.guide-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--gray-200);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.guide-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Label info button */
+.label-info-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--accent-blue);
+  padding: 2px 4px;
+  margin-left: 4px;
+  vertical-align: middle;
+  display: inline-flex;
+  align-items: center;
+}
+
+.label-info-btn:hover {
+  color: var(--primary-dark);
+}
+
+.form-label-optional {
+  font-weight: normal;
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+/* Inline guide in modal */
+.inline-guide {
+  background: #f0f8ff;
+  border: 1px solid #b0d4f1;
+  border-radius: 6px;
+  padding: 10px;
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.inline-guide-row {
+  padding: 4px 0;
+  color: var(--text-secondary);
+  border-bottom: 1px solid #d8eaf7;
+}
+
+.inline-guide-row:last-child {
+  border-bottom: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .risk-guide {
+    grid-template-columns: 1fr;
+  }
+
+  .threat-cell,
+  .vulnerability-cell {
+    max-width: 100%;
+  }
+
+  .table-container {
+    overflow-x: auto;
+  }
+}
