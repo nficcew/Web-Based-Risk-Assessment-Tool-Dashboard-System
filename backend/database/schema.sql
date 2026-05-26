@@ -2,9 +2,9 @@
 -- Risk Assessment Tool Database Schema
 -- ISO/IEC 27001:2022 Compliance System
 -- For XAMPP MySQL
+-- Updated: May 2026 — Asset Category + Attribution Fields
 -- ============================================================================
 
--- Create Database
 CREATE DATABASE IF NOT EXISTS risk_assessment_db;
 USE risk_assessment_db;
 
@@ -29,24 +29,58 @@ CREATE TABLE IF NOT EXISTS users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
--- ASSETS TABLE
+-- ASSETS TABLE (Updated — ISO/IEC 27001:2022 Annex A.5.9)
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS assets (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    asset_id VARCHAR(20),
     user_id INT NOT NULL,
     name VARCHAR(255) NOT NULL,
-    type ENUM('System', 'Data', 'Hardware') NOT NULL,
+    type ENUM('Information','Software','Physical','Services','People','Intangible') NOT NULL,
     value ENUM('Low', 'Medium', 'High', 'Critical') NOT NULL,
+    classification ENUM('Public','Internal','Confidential','Restricted') DEFAULT 'Internal',
+    status ENUM('Active', 'Inactive', 'Disposed') DEFAULT 'Active',
     owner VARCHAR(255) NOT NULL,
+    custodian VARCHAR(255) NULL,
     location VARCHAR(255) NOT NULL,
+    retention_period VARCHAR(100) NULL,
+    disposal_method VARCHAR(255) NULL,
+    review_date DATE NULL,
     description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_user_id (user_id),
     INDEX idx_type (type),
-    INDEX idx_value (value)
+    INDEX idx_value (value),
+    INDEX idx_asset_id (asset_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================================
+-- TRIGGER: Auto-generate Asset ID
+-- ============================================================================
+DROP TRIGGER IF EXISTS generate_asset_id;
+
+DELIMITER $$
+CREATE TRIGGER generate_asset_id
+BEFORE INSERT ON assets
+FOR EACH ROW
+BEGIN
+    DECLARE prefix VARCHAR(5);
+    DECLARE cat_count INT;
+    SET prefix = CASE NEW.type
+        WHEN 'Information' THEN 'INF'
+        WHEN 'Software'    THEN 'SFW'
+        WHEN 'Physical'    THEN 'PHY'
+        WHEN 'Services'    THEN 'SVC'
+        WHEN 'People'      THEN 'PPL'
+        WHEN 'Intangible'  THEN 'INT'
+        ELSE 'AST'
+    END;
+    SELECT COUNT(*) INTO cat_count FROM assets WHERE type = NEW.type;
+    SET NEW.asset_id = CONCAT(prefix, '-', LPAD(cat_count + 1, 3, '0'));
+END$$
+DELIMITER ;
 
 -- ============================================================================
 -- THREATS TABLE
@@ -59,6 +93,7 @@ CREATE TABLE IF NOT EXISTS threats (
     threat_name VARCHAR(255) NOT NULL,
     threat_description TEXT NOT NULL,
     vulnerability TEXT NOT NULL,
+    current_control TEXT NULL,
     likelihood ENUM('Very Low', 'Low', 'Medium', 'High', 'Very High') NOT NULL,
     impact ENUM('Very Low', 'Low', 'Medium', 'High', 'Critical') NOT NULL,
     risk_level VARCHAR(50) NOT NULL,
@@ -80,24 +115,21 @@ CREATE TABLE IF NOT EXISTS risk_assessments (
     assessment_type ENUM('qualitative', 'quantitative', 'hybrid') NOT NULL,
     asset_name VARCHAR(255) NOT NULL,
     threat_name VARCHAR(255) NOT NULL,
-
-    -- Qualitative fields
     likelihood VARCHAR(50),
     impact VARCHAR(50),
     risk_score INT,
-
-    -- Quantitative fields
     asset_value DECIMAL(15, 2),
     exposure_factor DECIMAL(5, 2),
     aro DECIMAL(10, 2),
     sle DECIMAL(15, 2),
     ale DECIMAL(15, 2),
-
-    -- Hybrid fields
+    vulnerability_score DECIMAL(5, 2),
+    cost_of_control DECIMAL(15, 2),
+    ale_before DECIMAL(15, 2),
+    ale_after DECIMAL(15, 2),
+    value_of_control DECIMAL(15, 2),
     control_effectiveness INT,
     residual_risk DECIMAL(10, 2),
-
-    -- Common fields
     risk_level VARCHAR(50) NOT NULL,
     calculation TEXT,
     notes TEXT,
@@ -110,7 +142,7 @@ CREATE TABLE IF NOT EXISTS risk_assessments (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
--- AUDIT LOG TABLE (for tracking user actions)
+-- AUDIT LOG TABLE
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS audit_log (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -129,30 +161,10 @@ CREATE TABLE IF NOT EXISTS audit_log (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
--- DEFAULT ADMIN USER
+-- VIEWS
 -- ============================================================================
--- The admin user must be created via the seed script, NOT hardcoded here,
--- because the application uses Argon2id password hashing.
---
--- After running this schema, run the seed script once:
---   cd backend && node scripts/seed.js
---
--- Default credentials created by the seed script:
---   Email:    admin@riskassessment.com
---   Password: Admin@123  (change after first login!)
--- ============================================================================
-
--- ============================================================================
--- VIEWS FOR REPORTING
--- ============================================================================
-
--- View: User Statistics
 CREATE OR REPLACE VIEW user_statistics AS
-SELECT
-    u.id,
-    u.full_name,
-    u.email,
-    u.organization,
+SELECT u.id, u.full_name, u.email, u.organization,
     COUNT(DISTINCT a.id) as total_assets,
     COUNT(DISTINCT t.id) as total_threats,
     COUNT(DISTINCT ra.id) as total_assessments
@@ -162,11 +174,8 @@ LEFT JOIN threats t ON u.id = t.user_id
 LEFT JOIN risk_assessments ra ON u.id = ra.user_id
 GROUP BY u.id;
 
--- View: Risk Summary by User
 CREATE OR REPLACE VIEW risk_summary AS
-SELECT
-    u.id as user_id,
-    u.full_name,
+SELECT u.id as user_id, u.full_name,
     COUNT(t.id) as total_risks,
     SUM(CASE WHEN t.risk_level = 'Critical' THEN 1 ELSE 0 END) as critical_risks,
     SUM(CASE WHEN t.risk_level = 'High' THEN 1 ELSE 0 END) as high_risks,
@@ -175,23 +184,3 @@ SELECT
 FROM users u
 LEFT JOIN threats t ON u.id = t.user_id
 GROUP BY u.id;
-
--- ============================================================================
--- INDEXES FOR PERFORMANCE
--- ============================================================================
-
--- Already created in table definitions above
-
--- ============================================================================
--- DATABASE SCHEMA COMPLETE
--- ============================================================================
-
--- To use this:
--- 1. Start XAMPP and run MySQL
--- 2. Open phpMyAdmin (http://localhost/phpmyadmin)
--- 3. Click "SQL" tab
--- 4. Copy and paste this entire file
--- 5. Click "Go" to execute
---
--- Or use command line:
--- mysql -u root -p < schema.sql

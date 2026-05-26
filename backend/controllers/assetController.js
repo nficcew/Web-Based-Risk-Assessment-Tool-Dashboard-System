@@ -29,36 +29,45 @@ const getAsset = async (req, res) => {
 
 const createAsset = async (req, res) => {
   try {
-    const { name, type, value, owner, custodian, classification, status, location, retention_period, disposal_method, review_date, description } = req.body;
+    const { name, type, value, classification, status, owner, custodian,
+            location, retention_period, disposal_method, review_date, description } = req.body;
 
     if (!name || !type || !value || !owner || !location) {
-      return res.status(400).json({ success: false, message: 'Please provide all required fields' });
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide all required fields: name, type, value, owner, location'
+      });
+    }
+
+    const validTypes = ['Information', 'Software', 'Physical', 'Services', 'People', 'Intangible'];
+    if (!validTypes.includes(type)) {
+      return res.status(400).json({ success: false, message: `Invalid asset type. Must be one of: ${validTypes.join(', ')}` });
     }
 
     const [result] = await promisePool.query(
-      `INSERT INTO assets (user_id, name, type, value, owner, custodian, classification, status, location, retention_period, disposal_method, review_date, description)
+      `INSERT INTO assets
+        (user_id, name, type, value, classification, status, owner, custodian,
+         location, retention_period, disposal_method, review_date, description)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [req.user.id, name, type, value, owner, custodian || null, classification || 'Internal', status || 'Active', location, retention_period || null, disposal_method || null, review_date || null, description || '']
-    );
-
-    // Auto-generate Asset ID based on category
-    const prefixMap = {
-      'Information': 'INFO', 'Software': 'SW', 'Physical': 'PHY',
-      'Services': 'SVC', 'People': 'PPL', 'Intangible': 'INT'
-    };
-    const prefix = prefixMap[type] || 'ASSET';
-    const assetId = `${prefix}-${String(result.insertId).padStart(3, '0')}`;
-
-    await promisePool.query(
-      'UPDATE assets SET asset_id = ? WHERE id = ?',
-      [assetId, result.insertId]
+      [
+        req.user.id, name, type, value,
+        classification || 'Internal',
+        status || 'Active',
+        owner,
+        custodian || null,
+        location,
+        retention_period || null,
+        disposal_method || null,
+        review_date || null,
+        description || ''
+      ]
     );
 
     const [assets] = await promisePool.query('SELECT * FROM assets WHERE id = ?', [result.insertId]);
 
     await promisePool.query(
       'INSERT INTO audit_log (user_id, action, table_name, record_id, details) VALUES (?, ?, ?, ?, ?)',
-      [req.user.id, 'CREATE_ASSET', 'assets', result.insertId, `Created asset: ${name} (${assetId})`]
+      [req.user.id, 'CREATE_ASSET', 'assets', result.insertId, `Created asset: ${name} (${assets[0].asset_id})`]
     );
 
     res.status(201).json({ success: true, message: 'Asset created successfully', data: assets[0] });
@@ -70,33 +79,41 @@ const createAsset = async (req, res) => {
 
 const updateAsset = async (req, res) => {
   try {
-    const { name, type, value, owner, custodian, classification, status, location, retention_period, disposal_method, review_date, description } = req.body;
+    const { name, type, value, classification, status, owner, custodian,
+            location, retention_period, disposal_method, review_date, description } = req.body;
 
     const [existing] = await promisePool.query(
-      'SELECT id FROM assets WHERE id = ? AND user_id = ?',
+      'SELECT id, asset_id FROM assets WHERE id = ? AND user_id = ?',
       [req.params.id, req.user.id]
     );
-
     if (existing.length === 0) return res.status(404).json({ success: false, message: 'Asset not found' });
 
-    // Update Asset ID if type changed
-    const prefixMap = {
-      'Information': 'INFO', 'Software': 'SW', 'Physical': 'PHY',
-      'Services': 'SVC', 'People': 'PPL', 'Intangible': 'INT'
-    };
-    const prefix = prefixMap[type] || 'ASSET';
-    const assetId = `${prefix}-${String(req.params.id).padStart(3, '0')}`;
-
     await promisePool.query(
-      `UPDATE assets SET asset_id = ?, name = ?, type = ?, value = ?, owner = ?, custodian = ?, classification = ?, status = ?, location = ?, retention_period = ?, disposal_method = ?, review_date = ?, description = ? WHERE id = ?`,
-      [assetId, name, type, value, owner, custodian || null, classification || 'Internal', status || 'Active', location, retention_period || null, disposal_method || null, review_date || null, description, req.params.id]
+      `UPDATE assets SET
+        name = ?, type = ?, value = ?, classification = ?, status = ?,
+        owner = ?, custodian = ?, location = ?,
+        retention_period = ?, disposal_method = ?, review_date = ?, description = ?
+       WHERE id = ?`,
+      [
+        name, type, value,
+        classification || 'Internal',
+        status || 'Active',
+        owner,
+        custodian || null,
+        location,
+        retention_period || null,
+        disposal_method || null,
+        review_date || null,
+        description || '',
+        req.params.id
+      ]
     );
 
     const [assets] = await promisePool.query('SELECT * FROM assets WHERE id = ?', [req.params.id]);
 
     await promisePool.query(
       'INSERT INTO audit_log (user_id, action, table_name, record_id, details) VALUES (?, ?, ?, ?, ?)',
-      [req.user.id, 'UPDATE_ASSET', 'assets', req.params.id, `Updated asset: ${name}`]
+      [req.user.id, 'UPDATE_ASSET', 'assets', req.params.id, `Updated asset: ${name} (${existing[0].asset_id})`]
     );
 
     res.json({ success: true, message: 'Asset updated successfully', data: assets[0] });
@@ -109,7 +126,7 @@ const updateAsset = async (req, res) => {
 const deleteAsset = async (req, res) => {
   try {
     const [existing] = await promisePool.query(
-      'SELECT name FROM assets WHERE id = ? AND user_id = ?',
+      'SELECT name, asset_id FROM assets WHERE id = ? AND user_id = ?',
       [req.params.id, req.user.id]
     );
     if (existing.length === 0) return res.status(404).json({ success: false, message: 'Asset not found' });
@@ -118,7 +135,7 @@ const deleteAsset = async (req, res) => {
 
     await promisePool.query(
       'INSERT INTO audit_log (user_id, action, table_name, record_id, details) VALUES (?, ?, ?, ?, ?)',
-      [req.user.id, 'DELETE_ASSET', 'assets', req.params.id, `Deleted asset: ${existing[0].name}`]
+      [req.user.id, 'DELETE_ASSET', 'assets', req.params.id, `Deleted asset: ${existing[0].name} (${existing[0].asset_id})`]
     );
 
     res.json({ success: true, message: 'Asset deleted successfully' });
@@ -135,8 +152,14 @@ const getAssetStats = async (req, res) => {
         COUNT(*) as total_assets,
         SUM(CASE WHEN value = 'Critical' THEN 1 ELSE 0 END) as critical_assets,
         SUM(CASE WHEN value = 'High' THEN 1 ELSE 0 END) as high_value_assets,
-        SUM(CASE WHEN status = 'Active' OR status IS NULL THEN 1 ELSE 0 END) as active_assets,
-        SUM(CASE WHEN classification = 'Restricted' OR classification = 'Confidential' THEN 1 ELSE 0 END) as sensitive_assets
+        SUM(CASE WHEN status = 'Active' THEN 1 ELSE 0 END) as active_assets,
+        SUM(CASE WHEN classification IN ('Restricted','Confidential') THEN 1 ELSE 0 END) as sensitive_assets,
+        SUM(CASE WHEN type = 'Information' THEN 1 ELSE 0 END) as information_assets,
+        SUM(CASE WHEN type = 'Software' THEN 1 ELSE 0 END) as software_assets,
+        SUM(CASE WHEN type = 'Physical' THEN 1 ELSE 0 END) as physical_assets,
+        SUM(CASE WHEN type = 'Services' THEN 1 ELSE 0 END) as services_assets,
+        SUM(CASE WHEN type = 'People' THEN 1 ELSE 0 END) as people_assets,
+        SUM(CASE WHEN type = 'Intangible' THEN 1 ELSE 0 END) as intangible_assets
       FROM assets WHERE user_id = ?
     `, [req.user.id]);
 
