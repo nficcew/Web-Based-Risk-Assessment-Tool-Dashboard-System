@@ -103,6 +103,34 @@ code {
   gap: var(--spacing-sm);
 }
 
+/* Back Button */
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background-color: var(--gray-100);
+  color: var(--text-primary);
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  margin-bottom: var(--spacing-md);
+}
+
+.btn-back:hover {
+  background-color: var(--gray-200);
+  transform: translateX(-2px);
+}
+
+.btn-back::before {
+  content: '←';
+  font-size: 16px;
+}
+
 .btn {
   padding: 10px 20px;
   border: none;
@@ -231,12 +259,21 @@ code {
   min-height: 80px;
 }
 
+/* Table - with horizontal scroll wrapper */
+.table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-md);
+  width: 100%;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
   background: var(--bg-primary);
   border-radius: var(--radius-md);
   overflow: hidden;
+  min-width: 600px;
 }
 
 .table thead {
@@ -251,6 +288,7 @@ code {
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
 .table td {
@@ -281,20 +319,6 @@ code {
   grid-template-columns: repeat(4, 1fr);
 }
 
-@media (max-width: 1024px) {
-  .grid-4 {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .grid-2,
-  .grid-3,
-  .grid-4 {
-    grid-template-columns: 1fr;
-  }
-}
-
 /* Animation */
 @keyframes fadeIn {
   from {
@@ -309,4 +333,85 @@ code {
 
 .fade-in {
   animation: fadeIn 0.3s ease;
+}
+
+/* ── RESPONSIVE / MOBILE ─────────────────────────────────── */
+
+@media (max-width: 1024px) {
+  .grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .grid-2,
+  .grid-3,
+  .grid-4 {
+    grid-template-columns: 1fr;
+  }
+
+  .container {
+    padding: 0 var(--spacing-sm);
+  }
+
+  .card {
+    padding: 16px;
+    margin-bottom: var(--spacing-md);
+  }
+
+  .card-header {
+    font-size: 1rem;
+  }
+
+  .btn {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+
+  .btn-sm {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+
+  .table th,
+  .table td {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .badge {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  /* Page title smaller on mobile */
+  h1 {
+    font-size: 1.4rem !important;
+  }
+
+  h2 {
+    font-size: 1.2rem !important;
+  }
+
+  /* Forms full width on mobile */
+  .form-input,
+  .form-select,
+  .form-textarea {
+    font-size: 16px; /* prevents zoom on iOS */
+  }
+}
+
+@media (max-width: 480px) {
+  .grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .card {
+    padding: 12px;
+  }
+
+  .btn-back {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
 }
