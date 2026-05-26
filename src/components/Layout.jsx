@@ -1,28 +1,29 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  LayoutDashboard,
-  Database,
   AlertTriangle,
   Calculator,
+  ChevronDown,
+  Database,
   FileText,
+  LayoutDashboard,
   LogOut,
   Menu,
-  X,
-  Shield,
-  Users,
-  User,
   Settings,
-  ChevronDown
+  Shield,
+  User,
+  Users,
+  X
 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import './Layout.css';
 
 const Layout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
   const [currentUser, setCurrentUser] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -30,6 +31,22 @@ const Layout = ({ children }) => {
     if (user) {
       setCurrentUser(JSON.parse(user));
     }
+  }, []);
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setSidebarOpen(true);
+      } else {
+        setSidebarOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Close dropdown when clicking outside
@@ -43,6 +60,14 @@ const Layout = ({ children }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Close sidebar when navigating on mobile
+  const handleNavigation = (path) => {
+    navigate(path);
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  };
 
   const menuItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['admin', 'user'] },
@@ -67,12 +92,30 @@ const Layout = ({ children }) => {
 
   return (
     <div className="layout">
+      {/* Mobile Overlay - tap to close sidebar */}
+      {isMobile && sidebarOpen && (
+        <div
+          className="sidebar-overlay"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
+        {/* Close button on mobile */}
+        {isMobile && (
+          <button
+            className="sidebar-close-btn"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X size={20} />
+          </button>
+        )}
+
         <div className="sidebar-header">
           <div className="logo">
             <Shield size={32} />
-            {sidebarOpen && <span>Risk Assessment</span>}
+            {(sidebarOpen || isMobile) && <span>Risk Assessment</span>}
           </div>
         </div>
 
@@ -81,10 +124,10 @@ const Layout = ({ children }) => {
             <button
               key={item.path}
               className={`nav-item ${isActive(item.path) ? 'active' : ''}`}
-              onClick={() => navigate(item.path)}
+              onClick={() => handleNavigation(item.path)}
             >
               <item.icon size={20} />
-              {sidebarOpen && <span>{item.label}</span>}
+              {(sidebarOpen || isMobile) && <span>{item.label}</span>}
             </button>
           ))}
         </nav>
@@ -92,20 +135,21 @@ const Layout = ({ children }) => {
         <div className="sidebar-footer">
           <button className="nav-item logout" onClick={handleLogout}>
             <LogOut size={20} />
-            {sidebarOpen && <span>Logout</span>}
+            {(sidebarOpen || isMobile) && <span>Logout</span>}
           </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <div className="main-content">
+      <div className={`main-content ${sidebarOpen && !isMobile ? 'sidebar-open' : 'sidebar-closed'}`}>
         {/* Top Bar */}
         <header className="topbar">
           <button
             className="menu-toggle"
             onClick={() => setSidebarOpen(!sidebarOpen)}
+            aria-label="Toggle sidebar"
           >
-            {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+            {sidebarOpen && !isMobile ? <X size={24} /> : <Menu size={24} />}
           </button>
 
           <div className="topbar-title">
