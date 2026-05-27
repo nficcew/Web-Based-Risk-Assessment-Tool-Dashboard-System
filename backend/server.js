@@ -7,6 +7,9 @@ const { testConnection } = require('./config/database');
 // Initialize app
 const app = express();
 
+// Trust proxy — required for Railway/Vercel deployment
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
@@ -17,8 +20,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // Rate Limiting — Login only
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes window
-  max: 10, // max 10 login attempts
+  windowMs: 15 * 60 * 1000,
+  max: 10,
   message: {
     success: false,
     message: 'Too many login attempts. Please try again after 15 minutes.'
