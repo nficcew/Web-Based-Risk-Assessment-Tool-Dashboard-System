@@ -3,14 +3,12 @@ const { promisePool } = require('../config/database');
 const generateToken = require('../utils/generateToken');
 const { validationResult } = require('express-validator');
 const { encrypt, decrypt } = require('../utils/encryption');
-const { isSmtpConfigured, sendPasswordResetEmail } = require('../utils/mailer');
 
 // @desc    Register new user
 // @route   POST /api/auth/register
 // @access  Public
 const register = async (req, res) => {
   try {
-    // Validate request
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -22,7 +20,6 @@ const register = async (req, res) => {
 
     const { fullName, email, password, organization } = req.body;
 
-    // Check if user already exists
     const [existingUsers] = await promisePool.query(
       'SELECT id FROM users WHERE email = ?',
       [email]
@@ -35,27 +32,21 @@ const register = async (req, res) => {
       });
     }
 
-    // Hash password using bcrypt
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Insert new user
     const [result] = await promisePool.query(
       'INSERT INTO users (full_name, email, password, organization, role) VALUES (?, ?, ?, ?, ?)',
       [fullName, email, hashedPassword, organization, 'user']
     );
 
-    // Get created user
     const [users] = await promisePool.query(
       'SELECT id, full_name, email, organization, role, created_at FROM users WHERE id = ?',
       [result.insertId]
     );
 
     const user = users[0];
-
-    // Generate token
     const token = generateToken(user.id);
 
-    // Log audit
     await promisePool.query(
       'INSERT INTO audit_log (user_id, action, details) VALUES (?, ?, ?)',
       [user.id, 'USER_REGISTERED', `User ${email} registered successfully`]
@@ -91,7 +82,6 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validate input
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -99,7 +89,6 @@ const login = async (req, res) => {
       });
     }
 
-    // Get user from database
     const [users] = await promisePool.query(
       'SELECT * FROM users WHERE email = ?',
       [email]
@@ -114,7 +103,6 @@ const login = async (req, res) => {
 
     const user = users[0];
 
-    // Check if user is active
     if (!user.is_active) {
       return res.status(401).json({
         success: false,
@@ -122,7 +110,6 @@ const login = async (req, res) => {
       });
     }
 
-    // Verify password using bcrypt
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
@@ -132,16 +119,13 @@ const login = async (req, res) => {
       });
     }
 
-    // Update last login
     await promisePool.query(
       'UPDATE users SET last_login = NOW() WHERE id = ?',
       [user.id]
     );
 
-    // Generate token
     const token = generateToken(user.id);
 
-    // Log audit
     await promisePool.query(
       'INSERT INTO audit_log (user_id, action, details) VALUES (?, ?, ?)',
       [user.id, 'USER_LOGIN', `User ${email} logged in`]
@@ -215,7 +199,6 @@ const getMe = async (req, res) => {
 // @access  Private
 const updateProfile = async (req, res) => {
   try {
-    // Accept both camelCase (fullName) and snake_case (full_name)
     const fullName = req.body.fullName || req.body.full_name;
     const { email, organization } = req.body;
 
@@ -226,7 +209,6 @@ const updateProfile = async (req, res) => {
       });
     }
 
-    // If email is being changed, check it's not already taken
     if (email) {
       const [emailCheck] = await promisePool.query(
         'SELECT id FROM users WHERE email = ? AND id != ?',
@@ -245,7 +227,6 @@ const updateProfile = async (req, res) => {
       [fullName, email || null, organization || null, req.user.id]
     );
 
-    // Get updated user
     const [users] = await promisePool.query(
       'SELECT id, full_name, email, organization, role FROM users WHERE id = ?',
       [req.user.id]
@@ -287,7 +268,6 @@ const changePassword = async (req, res) => {
       });
     }
 
-    // Get user
     const [users] = await promisePool.query(
       'SELECT password FROM users WHERE id = ?',
       [req.user.id]
@@ -295,7 +275,6 @@ const changePassword = async (req, res) => {
 
     const user = users[0];
 
-    // Verify current password using bcrypt
     const isValid = await bcrypt.compare(currentPassword, user.password);
     if (!isValid) {
       return res.status(401).json({
@@ -304,16 +283,13 @@ const changePassword = async (req, res) => {
       });
     }
 
-    // Hash new password using bcrypt
     const hashedPassword = await bcrypt.hash(newPassword, 12);
 
-    // Update password
     await promisePool.query(
       'UPDATE users SET password = ? WHERE id = ?',
       [hashedPassword, req.user.id]
     );
 
-    // Log audit
     await promisePool.query(
       'INSERT INTO audit_log (user_id, action, details) VALUES (?, ?, ?)',
       [req.user.id, 'PASSWORD_CHANGED', 'User changed password']
@@ -332,7 +308,7 @@ const changePassword = async (req, res) => {
   }
 };
 
-// @desc    Request password reset — generates a token and returns the reset link
+// @desc    Request password reset
 // @route   POST /api/auth/forgot-password
 // @access  Public
 const forgotPassword = async (req, res) => {
@@ -348,23 +324,17 @@ const forgotPassword = async (req, res) => {
       [email]
     );
 
-    const genericMessage =
-      'If that email is registered, you will receive password reset instructions shortly.';
-
-    // Always return success to avoid email enumeration
     if (users.length === 0) {
       return res.json({
         success: true,
-        message: genericMessage,
+        message: 'If that email is registered, you will receive a reset link.',
       });
     }
 
     const user = users[0];
-
-    // Generate a secure random token
     const crypto = require('crypto');
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+    const expires = new Date(Date.now() + 60 * 60 * 1000);
 
     await promisePool.query(
       'UPDATE users SET reset_token = ?, reset_token_expires = ? WHERE id = ?',
@@ -376,37 +346,27 @@ const forgotPassword = async (req, res) => {
       [user.id, 'PASSWORD_RESET_REQUESTED', `Password reset requested for ${email}`]
     );
 
-    const frontendBase = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(
-      /\/$/,
-      ''
-    );
+    const frontendBase = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
     const resetLink = `${frontendBase}/reset-password?token=${resetToken}`;
 
-    if (isSmtpConfigured()) {
-      try {
+    // Try to send email but never fail because of it
+    try {
+      const { isSmtpConfigured, sendPasswordResetEmail } = require('../utils/mailer');
+      if (isSmtpConfigured()) {
         await sendPasswordResetEmail(user.email, resetLink, user.full_name);
-        return res.json({
-          success: true,
-          message: genericMessage,
-          emailSent: true,
-        });
-      } catch (mailErr) {
-        console.error('Password reset email failed:', mailErr);
-        return res.status(503).json({
-          success: false,
-          message:
-            'Unable to send reset email right now. Please try again later or contact support.',
-        });
       }
+    } catch (mailErr) {
+      console.error('Email send failed (non-fatal):', mailErr.message);
     }
 
-    // No SMTP: return link in response (local / dev)
+    // Always return the reset link so user can reset even without email
     res.json({
       success: true,
       message: 'Reset link generated successfully.',
-      resetToken,
       resetLink,
+      resetToken,
     });
+
   } catch (error) {
     console.error('Forgot password error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
