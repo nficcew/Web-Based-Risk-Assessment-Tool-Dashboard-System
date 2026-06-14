@@ -7,8 +7,10 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Moon,
   Settings,
   Shield,
+  Sun,
   User,
   Users,
   X
@@ -24,6 +26,7 @@ const Layout = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [darkMode, setDarkMode] = useState(localStorage.getItem('theme') === 'dark');
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -32,6 +35,17 @@ const Layout = ({ children }) => {
       setCurrentUser(JSON.parse(user));
     }
   }, []);
+
+  // Apply dark/light theme to the whole app
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [darkMode]);
 
   // Handle window resize
   useEffect(() => {
@@ -156,6 +170,16 @@ const Layout = ({ children }) => {
             <h1>ISO/IEC 27001:2022 Compliance</h1>
             <p>Cybersecurity Risk Assessment Tool</p>
           </div>
+
+          {/* Dark / Light Mode Toggle */}
+          <button
+            className="theme-toggle"
+            onClick={() => setDarkMode(!darkMode)}
+            aria-label="Toggle dark mode"
+            title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
 
           {/* User Profile Dropdown */}
           <div className="profile-dropdown" ref={dropdownRef}>
